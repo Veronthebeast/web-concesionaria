@@ -1,11 +1,11 @@
 import { create } from 'zustand'
-import type { FiltrosCatalogo, Vehiculo } from '@/types'
+import type { FiltrosCatalogo, VehiculoCompleto } from '@/types'
 
 interface FiltrosStore {
   filtros: FiltrosCatalogo
   setFiltro: <K extends keyof FiltrosCatalogo>(campo: K, valor: FiltrosCatalogo[K]) => void
   resetFiltros: () => void
-  vehiculosFiltrados: (vehiculos: Vehiculo[]) => Vehiculo[]
+  vehiculosFiltrados: (vehiculos: VehiculoCompleto[]) => VehiculoCompleto[]
 }
 
 export const useFiltrosStore = create<FiltrosStore>((set, get) => ({

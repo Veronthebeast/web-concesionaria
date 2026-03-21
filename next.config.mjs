@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
-// Placeholder - will be configured in Fase 5
 const nextConfig = {
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: 'cvbrcsbsdbfypqarpbjc.supabase.co',
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },
