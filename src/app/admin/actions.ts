@@ -16,8 +16,9 @@ export async function crearVehiculo(formData: FormData) {
   const supabase = await createClient()
   
   // Verificar auth
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    console.error('Auth error:', authError)
     throw new Error('No autorizado')
   }
 
@@ -29,15 +30,20 @@ export async function crearVehiculo(formData: FormData) {
   const km = parseInt(formData.get('km') as string)
   const precio = parseFloat(formData.get('precio') as string)
   const moneda = formData.get('moneda') as string
-  const version = formData.get('version') as string || null
-  const color = formData.get('color') as string || null
-  const combustible = formData.get('combustible') as string || null
-  const transmision = formData.get('transmision') as string || null
+  const version = (formData.get('version') as string) || null
+  const color = (formData.get('color') as string) || null
+  const combustible = (formData.get('combustible') as string) || null
+  const transmision = (formData.get('transmision') as string) || null
   const puertas = formData.get('puertas') ? parseInt(formData.get('puertas') as string) : null
-  const descripcion = formData.get('descripcion') as string || null
+  const descripcion = (formData.get('descripcion') as string) || null
   const estado = formData.get('estado') as string
   const destacado = formData.get('destacado') === 'true'
   const financiacion = formData.get('financiacion') === 'true'
+
+  // Validación básica
+  if (!tipo || !marca || !modelo || !anio || isNaN(km) || isNaN(precio) || !moneda || !estado) {
+    throw new Error('Faltan datos requeridos')
+  }
 
   // Insertar
   const { data, error } = await supabase
