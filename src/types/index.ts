@@ -45,6 +45,7 @@ export interface VehiculoCompleto extends Vehiculo {
 export interface FiltrosCatalogo {
   tipo?: TipoVehiculo
   marca?: string
+  busqueda?: string
   precioMax?: number
   anioDesde?: number
   anioHasta?: number

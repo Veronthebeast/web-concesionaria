@@ -21,7 +21,7 @@ function formatearPrecio(precio: number, moneda: string): string {
 
 export function VehiculoCard({ vehiculo, fotoPrincipal }: VehiculoCardProps) {
   return (
-    <Link href={`/vehiculos/${vehiculo.slug}`}>
+    <Link href={`/catalogo/vehiculos/${vehiculo.slug}`}>
       <article className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
         {/* Imagen */}
         <div className="relative aspect-[4/3] bg-gray-100">
