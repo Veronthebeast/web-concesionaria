@@ -3,7 +3,6 @@ import { Metadata } from 'next'
 import { getVehiculoPorSlug } from '@/lib/supabase/queries/vehiculos'
 import { GaleriaFotos } from '@/components/catalogo/GaleriaFotos'
 import { BotonWhatsApp } from '@/components/catalogo/BotonWhatsApp'
-import { Badge } from '@/components/ui/Badge'
 
 export const revalidate = 60
 
@@ -54,9 +53,9 @@ export default async function VehiculoPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-blanco border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <a href="/" className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
+          <a href="/" className="text-red-600 hover:text-red-700 flex items-center gap-2 font-medium">
             ← Volver al catálogo
           </a>
         </div>
@@ -65,7 +64,7 @@ export default async function VehiculoPage({ params }: Props) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Banner vendido */}
         {esVendido && (
-          <div className="bg-gray-900 text-white text-center py-3 px-4 rounded-lg mb-6">
+          <div className="bg-negro text-white text-center py-3 px-4 rounded-lg mb-6">
             <p className="font-semibold">Este vehículo ya fue vendido</p>
           </div>
         )}
@@ -80,58 +79,68 @@ export default async function VehiculoPage({ params }: Props) {
           <div className="space-y-6">
             {/* Título y badges */}
             <div>
-              <div className="flex flex-wrap gap-2 mb-2">
-                <Badge variant="default">{vehiculo.tipo === 'auto' ? 'Auto' : 'Moto'}</Badge>
-                <Badge variant="estado" estado={vehiculo.estado}>
+              <div className="flex flex-wrap gap-2 mb-3">
+                <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm font-medium">
+                  {vehiculo.tipo === 'auto' ? 'Auto' : 'Moto'}
+                </span>
+                <span className={`px-3 py-1 rounded text-sm font-medium ${
+                  vehiculo.estado === 'disponible' ? 'bg-green-100 text-green-700' :
+                  vehiculo.estado === 'reservado' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
                   {vehiculo.estado.charAt(0).toUpperCase() + vehiculo.estado.slice(1)}
-                </Badge>
-                {vehiculo.financiacion && <Badge variant="success">Financiación disponible</Badge>}
+                </span>
+                {vehiculo.financiacion && (
+                  <span className="px-3 py-1 bg-red-50 text-red-700 rounded text-sm font-medium">
+                    Financiación disponible
+                  </span>
+                )}
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">{nombreCompleto}</h1>
+              <h1 className="text-3xl font-bold text-negro">{nombreCompleto}</h1>
             </div>
 
             {/* Precio */}
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">Precio</p>
-              <p className="text-4xl font-bold text-blue-600">
+            <div className="bg-red-50 border border-red-100 p-5 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">Precio</p>
+              <p className="text-4xl font-bold text-red-600">
                 {formatearPrecio(vehiculo.precio, vehiculo.moneda)}
               </p>
             </div>
 
             {/* Ficha técnica */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Ficha técnica</h2>
+            <div className="bg-blanco rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-negro mb-4">Detalles</h2>
               <dl className="grid grid-cols-2 gap-4">
                 <div>
                   <dt className="text-sm text-gray-500">Año</dt>
-                  <dd className="font-medium text-gray-900">{vehiculo.anio}</dd>
+                  <dd className="font-medium text-negro">{vehiculo.anio}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-gray-500">Kilómetros</dt>
-                  <dd className="font-medium text-gray-900">{formatearKm(vehiculo.km)}</dd>
+                  <dd className="font-medium text-negro">{formatearKm(vehiculo.km)}</dd>
                 </div>
                 {vehiculo.color && (
                   <div>
                     <dt className="text-sm text-gray-500">Color</dt>
-                    <dd className="font-medium text-gray-900">{vehiculo.color}</dd>
+                    <dd className="font-medium text-negro">{vehiculo.color}</dd>
                   </div>
                 )}
                 {vehiculo.combustible && (
                   <div>
                     <dt className="text-sm text-gray-500">Combustible</dt>
-                    <dd className="font-medium text-gray-900 capitalize">{vehiculo.combustible}</dd>
+                    <dd className="font-medium text-negro capitalize">{vehiculo.combustible}</dd>
                   </div>
                 )}
                 {vehiculo.transmision && (
                   <div>
                     <dt className="text-sm text-gray-500">Transmisión</dt>
-                    <dd className="font-medium text-gray-900 capitalize">{vehiculo.transmision}</dd>
+                    <dd className="font-medium text-negro capitalize">{vehiculo.transmision}</dd>
                   </div>
                 )}
                 {vehiculo.puertas && (
                   <div>
                     <dt className="text-sm text-gray-500">Puertas</dt>
-                    <dd className="font-medium text-gray-900">{vehiculo.puertas}</dd>
+                    <dd className="font-medium text-negro">{vehiculo.puertas}</dd>
                   </div>
                 )}
               </dl>
@@ -139,8 +148,8 @@ export default async function VehiculoPage({ params }: Props) {
 
             {/* Descripción */}
             {vehiculo.descripcion && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Descripción</h2>
+              <div className="bg-blanco rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-negro mb-2">Descripción</h2>
                 <p className="text-gray-600 whitespace-pre-line">{vehiculo.descripcion}</p>
               </div>
             )}

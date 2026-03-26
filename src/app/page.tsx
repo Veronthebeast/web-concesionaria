@@ -3,7 +3,7 @@ import { SeccionDestacados } from '@/components/catalogo/SeccionDestacados'
 import { FiltrosPanelClient } from './FiltrosPanelClient'
 import { VehiculosConFiltros } from './VehiculosConFiltros'
 
-export const revalidate = 60 // ISR: revalidar cada 60 segundos
+export const revalidate = 60
 
 export default async function HomePage() {
   const [vehiculos, vehiculosDestacados, marcas] = await Promise.all([
@@ -14,14 +14,6 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Concesionaria</h1>
-          <p className="text-gray-600 mt-1">Autos y motos disponibles</p>
-        </div>
-      </header>
-
       {/* Main */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Destacados */}
@@ -29,10 +21,10 @@ export default async function HomePage() {
 
         {/* Catálogo con filtros */}
         <section>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Todos los vehículos</h2>
+          <h2 className="text-2xl font-bold text-negro mb-6">Todos los vehículos</h2>
           
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Panel de filtros (Client Component) */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Panel de filtros */}
             <div className="lg:col-span-1">
               <FiltrosPanelClient marcas={marcas} />
             </div>
@@ -44,13 +36,6 @@ export default async function HomePage() {
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>© 2024 Concesionaria. Todos los derechos reservados.</p>
-        </div>
-      </footer>
     </div>
   )
 }

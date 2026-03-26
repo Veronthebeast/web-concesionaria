@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Badge } from '@/components/ui/Badge'
 import type { Vehiculo, FotoVehiculo } from '@/types'
 
 interface VehiculoCardProps {
@@ -20,9 +19,11 @@ function formatearPrecio(precio: number, moneda: string): string {
 }
 
 export function VehiculoCard({ vehiculo, fotoPrincipal }: VehiculoCardProps) {
+  const esVendido = vehiculo.estado === 'vendido'
+  
   return (
     <Link href={`/catalogo/vehiculos/${vehiculo.slug}`}>
-      <article className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+      <article className="bg-blanco rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg hover:border-red-300 transition-all duration-200 group">
         {/* Imagen */}
         <div className="relative aspect-[4/3] bg-gray-100">
           {fotoPrincipal ? (
@@ -30,7 +31,7 @@ export function VehiculoCard({ vehiculo, fotoPrincipal }: VehiculoCardProps) {
               src={fotoPrincipal.url}
               alt={`${vehiculo.marca} ${vehiculo.modelo}`}
               fill
-              className="object-cover"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (
@@ -41,31 +42,31 @@ export function VehiculoCard({ vehiculo, fotoPrincipal }: VehiculoCardProps) {
             </div>
           )}
           {/* Badge de estado */}
-          <div className="absolute top-2 right-2">
-            <Badge variant="estado" estado={vehiculo.estado}>
+          <div className="absolute top-3 right-3">
+            <span className={`px-2 py-1 rounded text-xs font-medium ${
+              vehiculo.estado === 'disponible' ? 'bg-green-500 text-white' :
+              vehiculo.estado === 'reservado' ? 'bg-yellow-500 text-white' :
+              'bg-gray-500 text-white'
+            }`}>
               {vehiculo.estado.charAt(0).toUpperCase() + vehiculo.estado.slice(1)}
-            </Badge>
+            </span>
           </div>
-          {/* Badge financiación */}
-          {vehiculo.financiacion && (
-            <div className="absolute top-2 left-2">
-              <Badge variant="success">Financiación</Badge>
-            </div>
-          )}
         </div>
 
         {/* Contenido */}
         <div className="p-4">
-          <h3 className="font-semibold text-gray-900 text-lg">
+          <h3 className="font-semibold text-negro text-lg truncate">
             {vehiculo.marca} {vehiculo.modelo}
           </h3>
           <p className="text-sm text-gray-500">{vehiculo.anio} • {formatearKm(vehiculo.km)}</p>
           
-          <div className="mt-3 flex items-center justify-between">
-            <p className="font-bold text-lg text-gray-900">
+          <div className="mt-4 flex items-center justify-between">
+            <p className="font-bold text-xl text-negro">
               {formatearPrecio(vehiculo.precio, vehiculo.moneda)}
             </p>
-            <span className="text-sm text-blue-600 font-medium">Ver detalles →</span>
+            <span className="text-red-600 font-medium text-sm group-hover:text-red-700">
+              Ver →
+            </span>
           </div>
         </div>
       </article>
