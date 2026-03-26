@@ -5,7 +5,33 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
-export async function crearVehiculoConFotos(formData: FormData) {
+interface Foto {
+  url: string
+  storagePath: string
+}
+
+export async function crearVehiculoConFotos(
+  data: {
+    tipo: string
+    marca: string
+    modelo: string
+    anio: string
+    km: string
+    precio: string
+    moneda: string
+    version: string
+    color: string
+    combustible: string
+    transmision: string
+    puertas: string
+    descripcion: string
+    estado: string
+    destacado: boolean
+    financiacion: boolean
+    activo: boolean
+  },
+  fotos: Foto[]
+) {
   const cookieStore = await cookies()
   
   const supabase = createServerClient(
@@ -25,44 +51,58 @@ export async function crearVehiculoConFotos(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('No autorizado')
   
-  // Extraer datos del formData
-  const data = {
-    tipo: formData.get('tipo') as string,
-    marca: formData.get('marca') as string,
-    modelo: formData.get('modelo') as string,
-    anio: parseInt(formData.get('anio') as string),
-    km: parseInt(formData.get('km') as string),
-    precio: parseFloat(formData.get('precio') as string),
-    moneda: formData.get('moneda') as string,
-    version: formData.get('version') as string || null,
-    color: formData.get('color') as string || null,
-    combustible: formData.get('combustible') as string || null,
-    transmision: formData.get('transmision') as string || null,
-    puertas: formData.get('puertas') ? parseInt(formData.get('puertas') as string) : null,
-    descripcion: formData.get('descripcion') as string || null,
-    estado: formData.get('estado') as string,
-    destacado: formData.get('destacado') === 'true',
-    financiacion: formData.get('financiacion') === 'true',
-  }
-  
   // Crear vehículo
   const { data: vehiculo, error } = await supabase
     .from('vehiculos')
     .insert({
-      ...data,
+      tipo: data.tipo,
+      marca: data.marca,
+      modelo: data.modelo,
+      anio: parseInt(data.anio),
+      km: parseInt(data.km),
+      precio: parseFloat(data.precio),
+      moneda: data.moneda,
+      version: data.version || null,
+      color: data.color || null,
+      combustible: data.combustible || null,
+      transmision: data.transmision || null,
+      puertas: data.puertas ? parseInt(data.puertas) : null,
+      descripcion: data.descripcion || null,
+      estado: data.estado,
+      destacado: data.destacado,
+      financiacion: data.financiacion,
+      activo: data.activo,
       slug: '',
     })
     .select()
     .single()
   
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('Error creating vehiculo:', error)
+    throw new Error(error.message)
+  }
   
   // Generar slug
   const slug = `${data.marca}-${data.modelo}-${data.anio}-${vehiculo.id.slice(0, 4)}`.toLowerCase().replace(/\s+/g, '-')
   await supabase.from('vehiculos').update({ slug }).eq('id', vehiculo.id)
   
-  // Buscar fotos subidas temporalmente (si las hay)
-  // Por ahora simplificado - las fotos se agregan después
+  // Guardar fotos en la base de datos
+  if (fotos && fotos.length > 0) {
+    const fotosData = fotos.map((foto, index) => ({
+      vehiculo_id: vehiculo.id,
+      url: foto.url,
+      storage_path: foto.storagePath,
+      orden: index
+    }))
+    
+    const { error: fotosError } = await supabase
+      .from('fotos_vehiculo')
+      .insert(fotosData)
+    
+    if (fotosError) {
+      console.error('Error saving fotos:', fotosError)
+    }
+  }
   
   revalidatePath('/admin/vehiculos')
   revalidatePath('/')

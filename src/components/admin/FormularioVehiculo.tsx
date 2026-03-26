@@ -25,18 +25,16 @@ interface FormData {
 
 interface Foto {
   url: string
-  archivo?: File
-  id?: string
-  eliminar?: boolean
+  storagePath: string
 }
 
-export function FormularioVehiculo({ 
-  vehiculo,
-  onSubmit 
-}: { 
+interface FormularioVehiculoProps {
+  action: (formData: FormData, fotos: Foto[]) => Promise<void>
   vehiculo?: FormData
-  onSubmit: (data: FormData, fotos: Foto[]) => Promise<void>
-}) {
+  fotosIniciales?: { id: string; url: string; storage_path: string }[]
+}
+
+export function FormularioVehiculo({ action, vehiculo, fotosIniciales = [] }: FormularioVehiculoProps) {
   const [formData, setFormData] = useState<FormData>(vehiculo || {
     tipo: 'auto',
     marca: '',
@@ -75,7 +73,7 @@ export function FormularioVehiculo({
     setError('')
 
     try {
-      await onSubmit(formData, fotos)
+      await action(formData, fotos)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar')
     } finally {
@@ -92,9 +90,10 @@ export function FormularioVehiculo({
       )}
 
       {/* Fotos */}
-      <div>
-        <UploadFotos onFotosChange={setFotos} />
-      </div>
+      <UploadFotos 
+        fotosIniciales={fotosIniciales} 
+        onFotosChange={setFotos} 
+      />
 
       {/* Datos principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
