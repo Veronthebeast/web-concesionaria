@@ -1,36 +1,112 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { toggleDestacado, toggleActivo, eliminarVehiculo } from '@/app/admin/actions'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/Badge'
+import { revalidatePath } from 'next/cache'
 
-export const revalidate = 0 // Dynamic
+interface Vehiculo {
+  id: string
+  marca: string
+  modelo: string
+  anio: number
+  tipo: string
+  precio: number
+  moneda: string
+  estado: string
+  destacado: boolean
+  activo: boolean
+  slug: string
+  fotoPrincipal?: string | null
+}
 
-export default async function AdminVehiculosPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+function Badge({ children, estado }: { children: React.ReactNode, estado?: string }) {
+  const colores: Record<string, string> = {
+    disponible: 'bg-green-100 text-green-800',
+    reservado: 'bg-yellow-100 text-yellow-800',
+    vendido: 'bg-gray-100 text-gray-800'
+  }
+  return (
+    <span className={`px-2 py-1 rounded text-xs font-medium ${colores[estado || ''] || 'bg-gray-100'}`}>
+      {children}
+    </span>
+  )
+}
 
-  if (!user) {
-    return <div className="p-8">No autorizado</div>
+export default function AdminVehiculosPage() {
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchVehiculos = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      window.location.href = '/auth/login'
+      return
+    }
+
+    const { data: vehiculosData } = await supabase
+      .from('vehiculos')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (vehiculosData) {
+      const vehiculosConFotos = await Promise.all(
+        vehiculosData.map(async (v) => {
+          const { data: fotos } = await supabase
+            .from('fotos_vehiculo')
+            .select('url')
+            .eq('vehiculo_id', v.id)
+            .eq('orden', 0)
+            .limit(1)
+          return { ...v, fotoPrincipal: fotos?.[0]?.url || null }
+        })
+      )
+      setVehiculos(vehiculosConFotos)
+    }
+    setLoading(false)
   }
 
-  const { data: vehiculos } = await supabase
-    .from('vehiculos')
-    .select('*')
-    .order('created_at', { ascending: false })
+  useEffect(() => {
+    fetchVehiculos()
+  }, [])
 
-  // Obtener foto principal de cada vehículo
-  const vehiculosConFotos = await Promise.all(
-    (vehiculos || []).map(async (v) => {
-      const { data: fotos } = await supabase
-        .from('fotos_vehiculo')
-        .select('url')
-        .eq('vehiculo_id', v.id)
-        .eq('orden', 0)
-        .limit(1)
-      return { ...v, fotoPrincipal: fotos?.[0]?.url || null }
-    })
-  )
+  const handleToggle = async (id: string, field: 'destacado' | 'activo', value: boolean) => {
+    const supabase = createClient()
+    await supabase.from('vehiculos').update({ [field]: value }).eq('id', id)
+    revalidatePath('/admin/vehiculos')
+    revalidatePath('/')
+    fetchVehiculos()
+  }
+
+  const handleEliminar = async (id: string) => {
+    if (!confirm('¿Eliminar vehículo?')) return
+    
+    const supabase = createClient()
+    
+    // Eliminar fotos del storage
+    const { data: fotos } = await supabase
+      .from('fotos_vehiculo')
+      .select('storage_path')
+      .eq('vehiculo_id', id)
+
+    if (fotos && fotos.length > 0) {
+      await supabase.storage.from('vehiculos-fotos').remove(fotos.map(f => f.storage_path))
+    }
+
+    // Eliminar de DB
+    await supabase.from('vehiculos').delete().eq('id', id)
+    revalidatePath('/admin/vehiculos')
+    revalidatePath('/')
+    fetchVehiculos()
+  }
+
+  if (loading) {
+    return <div className="p-8">Cargando...</div>
+  }
 
   return (
     <div>
@@ -58,7 +134,7 @@ export default async function AdminVehiculosPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {vehiculosConFotos.map((vehiculo) => (
+            {vehiculos.map((vehiculo) => (
               <tr key={vehiculo.id}>
                 <td className="px-6 py-4">
                   <div className="w-16 h-12 relative bg-gray-100 rounded overflow-hidden">
@@ -85,42 +161,47 @@ export default async function AdminVehiculosPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <Badge variant="estado" estado={vehiculo.estado}>
+                  <Badge estado={vehiculo.estado}>
                     {vehiculo.estado}
                   </Badge>
                 </td>
                 <td className="px-6 py-4">
-                  <form action={toggleDestacado.bind(null, vehiculo.id, !vehiculo.destacado)}>
-                    <button className={`w-12 h-6 rounded-full transition-colors ${vehiculo.destacado ? 'bg-green-500' : 'bg-gray-300'}`}>
-                      <span className={`block w-4 h-4 bg-white rounded-full transform transition-transform ${vehiculo.destacado ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </form>
+                  <button 
+                    onClick={() => handleToggle(vehiculo.id, 'destacado', !vehiculo.destacado)}
+                    className={`w-12 h-6 rounded-full transition-colors ${vehiculo.destacado ? 'bg-green-500' : 'bg-gray-300'}`}
+                  >
+                    <span className={`block w-4 h-4 bg-white rounded-full transform transition-transform ${vehiculo.destacado ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
                 </td>
                 <td className="px-6 py-4">
-                  <form action={toggleActivo.bind(null, vehiculo.id, !vehiculo.activo)}>
-                    <button className={`w-12 h-6 rounded-full transition-colors ${vehiculo.activo ? 'bg-green-500' : 'bg-gray-300'}`}>
-                      <span className={`block w-4 h-4 bg-white rounded-full transform transition-transform ${vehiculo.activo ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </form>
+                  <button 
+                    onClick={() => handleToggle(vehiculo.id, 'activo', !vehiculo.activo)}
+                    className={`w-12 h-6 rounded-full transition-colors ${vehiculo.activo ? 'bg-green-500' : 'bg-gray-300'}`}
+                  >
+                    <span className={`block w-4 h-4 bg-white rounded-full transform transition-transform ${vehiculo.activo ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <Link href={`/admin/vehiculos/${vehiculo.id}/editar`} className="text-blue-600 hover:text-blue-800">
                       Editar
                     </Link>
-                    <Link href={`/vehiculos/${vehiculo.slug}`} target="_blank" className="text-gray-600 hover:text-gray-800">
+                    <Link href={`/catalogo/vehiculos/${vehiculo.slug}`} target="_blank" className="text-gray-600 hover:text-gray-800">
                       Ver
                     </Link>
-                    <form action={eliminarVehiculo.bind(null, vehiculo.id)} onSubmit={(e) => { if (!confirm('¿Eliminar vehículo?')) e.preventDefault() }}>
-                      <button className="text-red-600 hover:text-red-800">Eliminar</button>
-                    </form>
+                    <button 
+                      onClick={() => handleEliminar(vehiculo.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {vehiculosConFotos.length === 0 && (
+        {vehiculos.length === 0 && (
           <div className="p-8 text-center text-gray-500">
             No hay vehículos cargados. ¡Cargá el primero!
           </div>
