@@ -75,15 +75,22 @@ export default function AdminVehiculosPage() {
   }, [])
 
   const handleToggle = async (id: string, field: 'destacado' | 'activo', value: boolean) => {
+    // Actualizar inmediatamente el estado local
+    setVehiculos(prev => prev.map(v => 
+      v.id === id ? { ...v, [field]: value } : v
+    ))
+    
     const supabase = createClient()
     await supabase.from('vehiculos').update({ [field]: value }).eq('id', id)
     revalidatePath('/admin/vehiculos')
     revalidatePath('/')
-    fetchVehiculos()
   }
 
   const handleEliminar = async (id: string) => {
     if (!confirm('¿Eliminar vehículo?')) return
+    
+    // Eliminar inmediatamente del estado local para mejor UX
+    setVehiculos(prev => prev.filter(v => v.id !== id))
     
     const supabase = createClient()
     
@@ -101,7 +108,6 @@ export default function AdminVehiculosPage() {
     await supabase.from('vehiculos').delete().eq('id', id)
     revalidatePath('/admin/vehiculos')
     revalidatePath('/')
-    fetchVehiculos()
   }
 
   if (loading) {
