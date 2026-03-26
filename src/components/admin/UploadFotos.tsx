@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
 
 interface FotoSubida {
   id?: string
@@ -14,12 +13,6 @@ interface UploadFotosProps {
   fotosIniciales?: { id: string; url: string; storage_path: string }[]
   onFotosChange: (fotos: { url: string; storagePath: string }[]) => void
 }
-
-// Cliente Supabase público para uploads desde el browser
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export function UploadFotos({ fotosIniciales = [], onFotosChange }: UploadFotosProps) {
   const [fotos, setFotos] = useState<FotoSubida[]>(
@@ -57,32 +50,27 @@ export function UploadFotos({ fotosIniciales = [], onFotosChange }: UploadFotosP
       }
 
       try {
-        // Generar nombre único
-        const ext = archivo.name.split('.').pop()
-        const fileName = `temp/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        // Usar el endpoint de API para subir
+        const formData = new FormData()
+        formData.append('file', archivo)
 
-        // Subir a Supabase Storage
-        const { error: uploadError } = await supabase.storage
-          .from('vehiculos-fotos')
-          .upload(fileName, archivo, {
-            contentType: archivo.type,
-            upsert: false
-          })
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
 
-        if (uploadError) {
-          console.error('Error uploading:', uploadError)
-          setError('Error al subir foto')
+        if (!response.ok) {
+          const err = await response.json()
+          console.error('Error uploading:', err)
+          setError(err.error || 'Error al subir foto')
           continue
         }
 
-        // Obtener URL pública
-        const { data: urlData } = supabase.storage
-          .from('vehiculos-fotos')
-          .getPublicUrl(fileName)
+        const data = await response.json()
 
         fotosNuevas.push({
-          url: urlData.publicUrl,
-          storagePath: fileName,
+          url: data.url,
+          storagePath: data.storagePath,
           esNueva: true
         })
       } catch (err) {
