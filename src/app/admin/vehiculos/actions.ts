@@ -10,28 +10,7 @@ interface Foto {
   storagePath: string
 }
 
-export async function crearVehiculoConFotos(
-  data: {
-    tipo: string
-    marca: string
-    modelo: string
-    anio: string
-    km: string
-    precio: string
-    moneda: string
-    version: string
-    color: string
-    combustible: string
-    transmision: string
-    puertas: string
-    descripcion: string
-    estado: string
-    destacado: boolean
-    financiacion: boolean
-    activo: boolean
-  },
-  fotos: Foto[]
-) {
+export async function crearVehiculoConFotos(formData: FormData, fotos: Foto[]) {
   const cookieStore = await cookies()
   
   const supabase = createServerClient(
@@ -50,6 +29,27 @@ export async function crearVehiculoConFotos(
   // Verificar auth
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('No autorizado')
+  
+  // Extraer datos del formData
+  const data = {
+    tipo: formData.get('tipo') as string,
+    marca: formData.get('marca') as string,
+    modelo: formData.get('modelo') as string,
+    anio: formData.get('anio') as string,
+    km: formData.get('km') as string,
+    precio: formData.get('precio') as string,
+    moneda: formData.get('moneda') as string,
+    version: formData.get('version') as string,
+    color: formData.get('color') as string,
+    combustible: formData.get('combustible') as string,
+    transmision: formData.get('transmision') as string,
+    puertas: formData.get('puertas') as string,
+    descripcion: formData.get('descripcion') as string,
+    estado: formData.get('estado') as string,
+    destacado: formData.get('destacado') === 'true',
+    financiacion: formData.get('financiacion') === 'true',
+    activo: formData.get('activo') === 'true',
+  }
   
   // Crear vehículo
   const { data: vehiculo, error } = await supabase
@@ -71,7 +71,7 @@ export async function crearVehiculoConFotos(
       estado: data.estado,
       destacado: data.destacado,
       financiacion: data.financiacion,
-      activo: data.activo,
+      activo: data.activo ?? true,
       slug: '',
     })
     .select()
