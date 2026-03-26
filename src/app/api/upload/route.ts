@@ -22,6 +22,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File too large (max 5MB)', code: 'FILE_TOO_LARGE' }, { status: 400 })
     }
 
+    // Verificar que la service key esté configurada
+    if (!process.env.SUPABASE_SERVICE_KEY) {
+      console.error('SUPABASE_SERVICE_KEY no configurada')
+      return NextResponse.json({ error: 'Server configuration error', code: 'NO_SERVICE_KEY' }, { status: 500 })
+    }
+
     // Crear cliente de servicio para upload (sin auth)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,7 +42,7 @@ export async function POST(request: Request) {
     const buffer = await file.arrayBuffer()
     const bytes = new Uint8Array(buffer)
 
-    // Subir a storage
+    // Subir a storage (ignorar políticas RLS)
     const { data, error } = await supabase.storage
       .from('vehiculos-fotos')
       .upload(fileName, bytes, {

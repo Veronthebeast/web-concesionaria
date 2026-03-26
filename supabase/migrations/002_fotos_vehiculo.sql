@@ -28,19 +28,27 @@ VALUES ('vehiculos-fotos', 'vehiculos-fotos', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Política de lectura del bucket (público)
+DROP POLICY IF EXISTS "vehiculos_fotos_public_read" ON storage.objects;
 CREATE POLICY "vehiculos_fotos_public_read" ON storage.objects
   FOR SELECT USING (bucket_id = 'vehiculos-fotos');
 
--- Política de escritura del bucket (solo auth)
-CREATE POLICY "vehiculos_fotos_auth_upload" ON storage.objects
+-- Política de escritura: permitir sin restricciones (el servicio usa service key)
+DROP POLICY IF EXISTS "vehiculos_fotos_auth_upload" ON storage.objects;
+CREATE POLICY "vehiculos_fotos_upload" ON storage.objects
   FOR INSERT WITH CHECK (
-    bucket_id = 'vehiculos-fotos' AND
-    auth.role() = 'authenticated'
+    bucket_id = 'vehiculos-fotos'
   );
 
--- Política de delete del bucket (solo auth)
-CREATE POLICY "vehiculos_fotos_auth_delete" ON storage.objects
+-- Política de delete
+DROP POLICY IF EXISTS "vehiculos_fotos_auth_delete" ON storage.objects;
+CREATE POLICY "vehiculos_fotos_delete" ON storage.objects
   FOR DELETE USING (
-    bucket_id = 'vehiculos-fotos' AND
-    auth.role() = 'authenticated'
+    bucket_id = 'vehiculos-fotos'
+  );
+
+-- Política de update
+DROP POLICY IF EXISTS "vehiculos_fotos_update" ON storage.objects;
+CREATE POLICY "vehiculos_fotos_update" ON storage.objects
+  FOR UPDATE USING (
+    bucket_id = 'vehiculos-fotos'
   );
