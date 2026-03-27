@@ -14,12 +14,20 @@ interface Banner {
   activo: boolean
 }
 
+interface Vehiculo {
+  id: string
+  marca: string
+  modelo: string
+  anio: number
+  slug: string
+}
+
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([])
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [editando, setEditando] = useState<Banner | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const fetchBanners = async () => {
     const supabase = createClient()
@@ -31,8 +39,20 @@ export default function AdminBannersPage() {
     setLoading(false)
   }
 
+  const fetchVehiculos = async () => {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('vehiculos')
+      .select('id, marca, modelo, anio, slug')
+      .eq('activo', true)
+      .eq('estado', 'disponible')
+      .order('marca', { ascending: true })
+    setVehiculos(data || [])
+  }
+
   useEffect(() => {
     fetchBanners()
+    fetchVehiculos()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -43,20 +63,29 @@ export default function AdminBannersPage() {
     const formData = new FormData(form)
     
     const titulo = formData.get('titulo') as string
-    const enlace_url = formData.get('enlace_url') as string
+    let enlace_url = formData.get('enlace_url') as string
+    const enlaceTipo = formData.get('enlace_tipo') as string
+    const vehiculoId = formData.get('vehiculo_id') as string
+    
+    // Si seleccionó un vehículo, generar la URL
+    if (enlaceTipo === 'vehiculo' && vehiculoId) {
+      const vehiculo = vehiculos.find(v => v.id === vehiculoId)
+      if (vehiculo) {
+        enlace_url = `/catalogo/vehiculos/${vehiculo.slug}`
+      }
+    }
+    
     const orden = parseInt(formData.get('orden') as string) || 0
     const activo = formData.get('activo') === 'true'
     
     const supabase = createClient()
 
     if (editando) {
-      // Editar existente
       await supabase
         .from('carousel_banners')
         .update({ titulo: titulo || null, enlace_url: enlace_url || null, orden, activo })
         .eq('id', editando.id)
     } else {
-      // Crear nuevo (requiere imagen)
       const imagenUrl = formData.get('imagen_url') as string
       if (!imagenUrl) {
         alert('Subí una imagen para el banner')
@@ -96,7 +125,6 @@ export default function AdminBannersPage() {
 
     if (res.ok) {
       const data = await res.json()
-      // Guardar en un input hidden
       let input = document.getElementById('imagen_url') as HTMLInputElement
       if (!input) {
         input = document.createElement('input')
@@ -107,7 +135,6 @@ export default function AdminBannersPage() {
       }
       input.value = data.url
       
-      // Preview
       const preview = document.getElementById('preview')
       if (preview) {
         (preview as HTMLImageElement).src = data.url
@@ -134,8 +161,24 @@ export default function AdminBannersPage() {
 
   const handleEditar = (banner: Banner) => {
     setEditando(banner)
-    // Scroll al formulario
     document.getElementById('form-banner')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  // Detectar si el enlace actual es de tipo vehículo
+  const getEnlaceTipoActual = () => {
+    if (!editando?.enlace_url) return 'libre'
+    if (editando.enlace_url.includes('/catalogo/vehiculos/')) return 'vehiculo'
+    return 'libre'
+  }
+
+  const getVehiculoIdActual = () => {
+    if (!editando?.enlace_url) return ''
+    const match = editando.enlace_url.match(/\/catalogo\/vehiculos\/(.+)/)
+    if (match) {
+      const vehiculo = vehiculos.find(v => v.slug === match[1])
+      return vehiculo?.id || ''
+    }
+    return ''
   }
 
   if (loading) {
@@ -186,13 +229,64 @@ export default function AdminBannersPage() {
             />
           </div>
 
-          {/* Enlace */}
+          {/* Tipo de enlace */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Enlace (URL)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">¿A dónde lleva el banner?</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="enlace_tipo"
+                  value="ninguno"
+                  defaultChecked={!editando?.enlace_url}
+                />
+                <span className="text-sm">Sin enlace</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="enlace_tipo"
+                  value="vehiculo"
+                  defaultChecked={getEnlaceTipoActual() === 'vehiculo'}
+                />
+                <span className="text-sm">Vehículo</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="enlace_tipo"
+                  value="libre"
+                  defaultChecked={getEnlaceTipoActual() === 'libre' && !!editando?.enlace_url}
+                />
+                <span className="text-sm">URL libre</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Selector de vehículo */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Elegir vehículo</label>
+            <select
+              name="vehiculo_id"
+              defaultValue={getVehiculoIdActual()}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2"
+            >
+              <option value="">Seleccionar un vehículo...</option>
+              {vehiculos.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.marca} {v.modelo} {v.anio}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* URL libre */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">O ingresá una URL</label>
             <input
               type="url"
               name="enlace_url"
-              defaultValue={editando?.enlace_url || ''}
+              defaultValue={getEnlaceTipoActual() === 'libre' ? editando?.enlace_url || '' : ''}
               placeholder="https://..."
               className="w-full border border-gray-300 rounded-lg px-4 py-2"
             />
@@ -252,6 +346,7 @@ export default function AdminBannersPage() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Imagen</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Título</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enlace</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orden</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
@@ -266,6 +361,9 @@ export default function AdminBannersPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900">{banner.titulo || '-'}</td>
+                <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                  {banner.enlace_url || '-'}
+                </td>
                 <td className="px-6 py-4 text-sm text-gray-500">{banner.orden}</td>
                 <td className="px-6 py-4">
                   <button
