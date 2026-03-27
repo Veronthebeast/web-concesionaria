@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import { revalidatePath } from 'next/cache'
@@ -28,6 +28,8 @@ export default function AdminBannersPage() {
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [editando, setEditando] = useState<Banner | null>(null)
+  const [imagenSubida, setImagenSubida] = useState<string | null>(null)
+  const [subiendo, setSubiendo] = useState(false)
 
   const fetchBanners = async () => {
     const supabase = createClient()
@@ -63,7 +65,7 @@ export default function AdminBannersPage() {
     const formData = new FormData(form)
     
     const titulo = formData.get('titulo') as string
-    let enlace_url = formData.get('enlace_url') as string
+    let enlace_url = formData.get('enlace_url_manual') as string
     const enlaceTipo = formData.get('enlace_tipo') as string
     const vehiculoId = formData.get('vehiculo_id') as string
     
@@ -73,6 +75,15 @@ export default function AdminBannersPage() {
       if (vehiculo) {
         enlace_url = `/catalogo/vehiculos/${vehiculo.slug}`
       }
+    }
+
+    // Usar la imagen subida o la del modo edición
+    const imagenUrl = imagenSubida || editando?.imagen_url
+    
+    if (!imagenUrl) {
+      alert('Subí una imagen para el banner')
+      setGuardando(false)
+      return
     }
     
     const orden = parseInt(formData.get('orden') as string) || 0
@@ -86,13 +97,6 @@ export default function AdminBannersPage() {
         .update({ titulo: titulo || null, enlace_url: enlace_url || null, orden, activo })
         .eq('id', editando.id)
     } else {
-      const imagenUrl = formData.get('imagen_url') as string
-      if (!imagenUrl) {
-        alert('Subí una imagen para el banner')
-        setGuardando(false)
-        return
-      }
-      
       await supabase
         .from('carousel_banners')
         .insert({
@@ -106,6 +110,7 @@ export default function AdminBannersPage() {
 
     form.reset()
     setEditando(null)
+    setImagenSubida(null)
     setGuardando(false)
     fetchBanners()
     revalidatePath('/')
@@ -114,6 +119,8 @@ export default function AdminBannersPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    setSubiendo(true)
 
     const formData = new FormData()
     formData.append('file', file)
@@ -125,22 +132,10 @@ export default function AdminBannersPage() {
 
     if (res.ok) {
       const data = await res.json()
-      let input = document.getElementById('imagen_url') as HTMLInputElement
-      if (!input) {
-        input = document.createElement('input')
-        input.type = 'hidden'
-        input.name = 'imagen_url'
-        input.id = 'imagen_url'
-        e.target.form?.appendChild(input)
-      }
-      input.value = data.url
-      
-      const preview = document.getElementById('preview')
-      if (preview) {
-        (preview as HTMLImageElement).src = data.url
-        preview.classList.remove('hidden')
-      }
+      setImagenSubida(data.url)
     }
+    
+    setSubiendo(false)
   }
 
   const handleEliminar = async (id: string) => {
@@ -161,12 +156,12 @@ export default function AdminBannersPage() {
 
   const handleEditar = (banner: Banner) => {
     setEditando(banner)
+    setImagenSubida(null)
     document.getElementById('form-banner')?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Detectar si el enlace actual es de tipo vehículo
   const getEnlaceTipoActual = () => {
-    if (!editando?.enlace_url) return 'libre'
+    if (!editando?.enlace_url) return 'ninguno'
     if (editando.enlace_url.includes('/catalogo/vehiculos/')) return 'vehiculo'
     return 'libre'
   }
@@ -203,18 +198,21 @@ export default function AdminBannersPage() {
               type="file"
               accept="image/*"
               onChange={handleUpload}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+              disabled={subiendo}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 disabled:opacity-50"
             />
-            <img id="preview" className="hidden mt-2 h-32 object-cover rounded" alt="Preview" />
-            {!editando && (
-              <p className="text-xs text-gray-500 mt-1">Subí una imagen para el banner</p>
-            )}
-            {editando && (
-              <div className="mt-2">
+            {/* Preview de imagen */}
+            <div className="mt-2">
+              {imagenSubida ? (
+                <img src={imagenSubida} alt="Preview" className="h-32 object-cover rounded" />
+              ) : editando ? (
                 <img src={editando.imagen_url} alt="Actual" className="h-32 object-cover rounded" />
-              </div>
-            )}
-            <input type="hidden" name="imagen_url" value={editando?.imagen_url || ''} />
+              ) : (
+                <div className="h-32 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                  {subiendo ? 'Subiendo...' : 'Sin imagen'}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Título */}
@@ -256,7 +254,7 @@ export default function AdminBannersPage() {
                   type="radio"
                   name="enlace_tipo"
                   value="libre"
-                  defaultChecked={getEnlaceTipoActual() === 'libre' && !!editando?.enlace_url}
+                  defaultChecked={getEnlaceTipoActual() === 'libre'}
                 />
                 <span className="text-sm">URL libre</span>
               </label>
@@ -285,7 +283,7 @@ export default function AdminBannersPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">O ingresá una URL</label>
             <input
               type="url"
-              name="enlace_url"
+              name="enlace_url_manual"
               defaultValue={getEnlaceTipoActual() === 'libre' ? editando?.enlace_url || '' : ''}
               placeholder="https://..."
               className="w-full border border-gray-300 rounded-lg px-4 py-2"
@@ -321,7 +319,7 @@ export default function AdminBannersPage() {
           <div className="flex gap-4">
             <button
               type="submit"
-              disabled={guardando}
+              disabled={guardando || !imagenSubida && !editando?.imagen_url}
               className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50"
             >
               {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear banner'}
@@ -329,7 +327,7 @@ export default function AdminBannersPage() {
             {editando && (
               <button
                 type="button"
-                onClick={() => setEditando(null)}
+                onClick={() => { setEditando(null); setImagenSubida(null) }}
                 className="px-6 py-2 border rounded-lg hover:bg-gray-50"
               >
                 Cancelar
