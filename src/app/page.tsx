@@ -1,19 +1,25 @@
 import { getVehiculos, getVehiculosDestacados, getMarcasDisponibles } from '@/lib/supabase/queries/vehiculos'
+import { getBannersActivos } from '@/lib/supabase/queries/banners'
 import { SeccionDestacados } from '@/components/catalogo/SeccionDestacados'
 import { FiltrosPanelClient } from './FiltrosPanelClient'
 import { VehiculosConFiltros } from './VehiculosConFiltros'
+import { Carrousel } from '@/components/home/Carrousel'
 
 export const revalidate = 60
 
 export default async function HomePage() {
-  const [vehiculos, vehiculosDestacados, marcas] = await Promise.all([
+  const [vehiculos, vehiculosDestacados, marcas, banners] = await Promise.all([
     getVehiculos(),
     getVehiculosDestacados(),
-    getMarcasDisponibles()
+    getMarcasDisponibles(),
+    getBannersActivos()
   ])
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Carrousel */}
+      <Carrousel banners={banners} />
+
       {/* Main */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Destacados */}

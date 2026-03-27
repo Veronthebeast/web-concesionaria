@@ -27,6 +27,9 @@ export default async function AdminLayout({
               <Link href="/admin/vehiculos" className="text-gray-600 hover:text-red-600 font-medium">
                 Vehículos
               </Link>
+              <Link href="/admin/banners" className="text-gray-600 hover:text-red-600 font-medium">
+                Banners
+              </Link>
               <Link href="/" className="text-gray-600 hover:text-red-600 font-medium" target="_blank">
                 Ver sitio
               </Link>
