@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 export function Header() {
   const router = useRouter()
@@ -11,7 +11,7 @@ export function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (busqueda.trim()) {
-      router.push(`/?busqueda=${encodeURIComponent(busqueda)}`)
+      router.push(`/catalogo?busqueda=${encodeURIComponent(busqueda.trim())}`)
     }
   }
 
@@ -26,7 +26,7 @@ export function Header() {
             </h1>
           </Link>
 
-          {/* Buscador - solo visible en desktop */}
+          {/* Buscador */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-4">
             <div className="relative w-full">
               <input
@@ -51,9 +51,6 @@ export function Header() {
           <nav className="flex items-center gap-4">
             <Link href="/catalogo" className="text-gray-700 hover:text-red-600 font-medium text-sm">
               Catálogo
-            </Link>
-            <Link href="/admin" className="text-gray-700 hover:text-red-600 font-medium text-sm">
-              Admin
             </Link>
           </nav>
         </div>
