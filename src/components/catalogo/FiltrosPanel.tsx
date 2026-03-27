@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useFiltrosStore } from '@/store/filtros'
 import type { TipoVehiculo, EstadoVehiculo } from '@/types'
 
@@ -9,6 +10,31 @@ interface FiltrosPanelProps {
 
 export function FiltrosPanel({ marcas }: FiltrosPanelProps) {
   const { filtros, setFiltro, resetFiltros } = useFiltrosStore()
+  const [mounted, setMounted] = useState(false)
+
+  // Evitar hydrated mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <aside className="bg-blanco p-5 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-semibold text-negro">Filtros</h3>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-10 bg-gray-200 rounded"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+        </div>
+      </aside>
+    )
+  }
+
+  const handleSetFiltro = <K extends keyof typeof filtros>(campo: K, valor: typeof filtros[K]) => {
+    setFiltro(campo, valor)
+  }
 
   return (
     <aside className="bg-blanco p-5 rounded-lg border border-gray-200">
@@ -29,7 +55,7 @@ export function FiltrosPanel({ marcas }: FiltrosPanelProps) {
           <input
             type="text"
             value={filtros.busqueda || ''}
-            onChange={(e) => setFiltro('busqueda', e.target.value || undefined)}
+            onChange={(e) => handleSetFiltro('busqueda', e.target.value)}
             placeholder="Marca, modelo..."
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           />
@@ -40,7 +66,7 @@ export function FiltrosPanel({ marcas }: FiltrosPanelProps) {
           <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
           <select
             value={filtros.tipo || ''}
-            onChange={(e) => setFiltro('tipo', (e.target.value || undefined) as TipoVehiculo | undefined)}
+            onChange={(e) => handleSetFiltro('tipo', (e.target.value || undefined) as TipoVehiculo | undefined)}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           >
             <option value="">Todos</option>
@@ -54,7 +80,7 @@ export function FiltrosPanel({ marcas }: FiltrosPanelProps) {
           <label className="block text-sm font-medium text-gray-700 mb-2">Marca</label>
           <select
             value={filtros.marca || ''}
-            onChange={(e) => setFiltro('marca', e.target.value || undefined)}
+            onChange={(e) => handleSetFiltro('marca', e.target.value || undefined)}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           >
             <option value="">Todas</option>
@@ -70,7 +96,7 @@ export function FiltrosPanel({ marcas }: FiltrosPanelProps) {
           <input
             type="number"
             value={filtros.precioMax || ''}
-            onChange={(e) => setFiltro('precioMax', e.target.value ? Number(e.target.value) : undefined)}
+            onChange={(e) => handleSetFiltro('precioMax', e.target.value ? Number(e.target.value) : undefined)}
             placeholder="Ej: 15000000"
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           />
@@ -82,7 +108,7 @@ export function FiltrosPanel({ marcas }: FiltrosPanelProps) {
           <input
             type="number"
             value={filtros.anioDesde || ''}
-            onChange={(e) => setFiltro('anioDesde', e.target.value ? Number(e.target.value) : undefined)}
+            onChange={(e) => handleSetFiltro('anioDesde', e.target.value ? Number(e.target.value) : undefined)}
             placeholder="Ej: 2018"
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           />
@@ -94,7 +120,7 @@ export function FiltrosPanel({ marcas }: FiltrosPanelProps) {
           <input
             type="number"
             value={filtros.anioHasta || ''}
-            onChange={(e) => setFiltro('anioHasta', e.target.value ? Number(e.target.value) : undefined)}
+            onChange={(e) => handleSetFiltro('anioHasta', e.target.value ? Number(e.target.value) : undefined)}
             placeholder="Ej: 2024"
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           />
@@ -105,7 +131,7 @@ export function FiltrosPanel({ marcas }: FiltrosPanelProps) {
           <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
           <select
             value={filtros.estado || ''}
-            onChange={(e) => setFiltro('estado', (e.target.value || undefined) as EstadoVehiculo | undefined)}
+            onChange={(e) => handleSetFiltro('estado', (e.target.value || undefined) as EstadoVehiculo | undefined)}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
           >
             <option value="">Todos</option>

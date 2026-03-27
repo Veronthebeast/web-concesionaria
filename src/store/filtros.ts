@@ -29,7 +29,7 @@ export const useFiltrosStore = create<FiltrosStore>((set, get) => ({
       if (filtros.anioHasta && v.anio > filtros.anioHasta) return false
       if (filtros.estado && v.estado !== filtros.estado) return false
       if (busqueda) {
-        const textoVehiculo = `${v.marca} ${v.modelo} ${v.version || ''}`.toLowerCase()
+        const textoVehiculo = `${v.marca || ''} ${v.modelo || ''} ${v.version || ''}`.toLowerCase()
         if (!textoVehiculo.includes(busqueda)) return false
       }
       return true
